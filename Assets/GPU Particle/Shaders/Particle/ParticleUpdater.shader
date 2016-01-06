@@ -10,8 +10,6 @@
 	}
 	CGINCLUDE
 		#include "UnityCG.cginc"
-		#include "Assets/CGINC/Random.cginc"
-		#include "Assets/CGINC/Quaternion.cginc"
 		
 		#define CamR _Cam_W2C[0].xyz
 		#define CamU _Cam_W2C[1].xyz
@@ -44,10 +42,7 @@
 			_NoiseTex,
 			_Vel,
 			_Pos,
-			_Col,
-			_FlowTex,
-			_SyphonFlow,
-			_SyphonTex;
+			_Col;
 		half4 _Pos_TexelSize;
 		
 		uniform float4x4 _Cam_W2C, _Cam_W2S, _Cam_S2C, _Cam_C2W;
@@ -146,7 +141,7 @@
 			pOut o;
 			o.vel = float4(0,0,0,1);
 			o.pos = float4(fullPos(i.uv,_Field), _Life);
-			o.col = half4(hsv2rgb(half3(i.uv.x,1,i.uv.y)),1);
+			o.col = half4(hsv2rgb(half3(i.uv,1)),1);
 			return o;
 		}
 		pOut emitFull(v2f i)
@@ -162,6 +157,26 @@
 				o = worldCurl(o);
 				o = baseUpdate(o);
 				LOOP_IN_FIELD
+				LIFE_SPAN
+			}
+			return o;
+		}
+
+		pOut noParticle (v2f i)
+		{
+			float id = i.uv.x*_Pos_TexelSize.x+i.uv.y;
+			pOut o;
+			o.vel = float4(0,0,0,1);
+			o.pos = float4(fullPos(i.uv,_Field), -_Life-id);
+			o.col = 0;
+			return o;
+		}
+		pOut gravity(v2f i){
+			pOut o = createPOut(i);
+			if(0<o.pos.w){
+				ADD_FORCE(float3(0,-1,0)*unity_DeltaTime.x)
+				o = worldCurl(o);
+				o = baseUpdate(o);
 				LIFE_SPAN
 			}
 			return o;
@@ -187,11 +202,27 @@
 			#pragma target 3.0
 			ENDCG
 		}
-		Pass//1
+		Pass//2
 		{
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment example
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass//3
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment noParticle
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass//4
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment gravity
 			#pragma target 3.0
 			ENDCG
 		}
