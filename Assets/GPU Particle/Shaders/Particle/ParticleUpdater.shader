@@ -18,6 +18,7 @@
 		#define LIFE_SPAN o.pos.w-=unity_DeltaTime.x;
 		#define ADD_FORCE(f) o.vel.xyz+=f;
 		#define LOOP_IN_FIELD o.pos.xyz = (frac((o.pos.xyz+_Field.x)*_Field.y*0.5)-0.5)*_Field.x*2;
+		#define CAM_SPACE_POS(wPos) mul(_Cam_W2C, float4(wPos,1)).xyz
 
 		struct appdata
 		{
@@ -42,10 +43,11 @@
 			_NoiseTex,
 			_Vel,
 			_Pos,
-			_Col;
+			_Col,
+			_SSCollTex;
 		half4 _Pos_TexelSize;
 		
-		uniform float4x4 _Cam_W2C, _Cam_W2S, _Cam_S2C, _Cam_C2W;
+		uniform float4x4 _Cam_W2C, _Cam_W2S, _Cam_S2C, _Cam_C2W,_Cam_C2S;
 		uniform float4 _Cam_SParams, _Cam_PParams;
 
 		uniform float2 _Field;
@@ -61,7 +63,9 @@
 		
 		float2 sUV(float3 wPos)//screen space of main
 		{
-			float4 sPos = mul(_Cam_W2S, float4(wPos,1));
+			float4 cPos = mul(_Cam_W2C, float4(wPos,1));
+			cPos.w = 1;
+			float4 sPos = mul(_Cam_C2S, cPos);
 			sPos = ComputeScreenPos(sPos);
 			return sPos.xy/sPos.w;
 		}
@@ -181,6 +185,20 @@
 			}
 			return o;
 		}
+		pOut ssCollid(v2f i){
+			pOut o = createPOut(i);
+			float2 uv = saturate(sUV(o.pos.xyz+o.vel.xyz*unity_DeltaTime.x));
+			float4 nomd = tex2D(_SSCollTex, uv);
+			float depth = abs(CAM_SPACE_POS(o.pos.xyz).z);
+			float dist = distance(depth, nomd.a);
+			if(nomd.a < depth && dist < 0.25){
+				float3 normal = nomd.xyz*2-1;
+				o.vel.xyz += normal*length(o.vel.xyz);
+				o.col.rgb = normal;
+			}
+			
+			return o;
+		}
 	ENDCG
 	SubShader
 	{
@@ -223,6 +241,14 @@
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment gravity
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass//5
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment ssCollid
 			#pragma target 3.0
 			ENDCG
 		}

@@ -91,7 +91,7 @@ public class MassMeshes : MonoBehaviour
 		for (var i = 0; i < numDraw; i++) {
 			var mpBlock = Extensions.GetPropertyBlock ();
 			mpBlock.SetFloat ("_Offset", i * numInSingleMesh);
-			Graphics.DrawMesh (mesh, transform.position, transform.rotation, drawMat, 0, null, 0, mpBlock, castShadow, reserveShadow);
+			Graphics.DrawMesh (mesh, transform.position, transform.rotation, drawMat, gameObject.layer, null, 0, mpBlock, castShadow, reserveShadow);
 		}
 	}
 
