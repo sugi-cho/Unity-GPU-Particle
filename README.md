@@ -1,6 +1,6 @@
 #Unity GPU Particle
 
-Unityによる、GPU Particle Systemです。
+Unityによる、GPU Particle Systemです。OSX(not DX11)でも、動きます。
 
 RenderTextureに、パーティクルの速度、位置、色情報を格納。
 
