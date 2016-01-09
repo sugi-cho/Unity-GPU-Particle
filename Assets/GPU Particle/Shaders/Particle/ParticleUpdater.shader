@@ -44,7 +44,9 @@
 			_Vel,
 			_Pos,
 			_Col,
-			_SSCollTex;
+			_SSCollTex,
+			_DepthNormalBack,
+			_DepthNormalFront;
 		half4 _Pos_TexelSize;
 		
 		uniform float4x4 _Cam_W2C, _Cam_W2S, _Cam_S2C, _Cam_C2W,_Cam_C2S;
@@ -188,13 +190,17 @@
 		pOut ssCollid(v2f i){
 			pOut o = createPOut(i);
 			float2 uv = saturate(sUV(o.pos.xyz+o.vel.xyz*unity_DeltaTime.x));
-			float4 nomd = tex2D(_SSCollTex, uv);
+			float4 nomd0 = tex2D(_DepthNormalBack, uv);
+			float4 nomd1 = tex2D(_DepthNormalFront, uv);
+
 			float depth = abs(CAM_SPACE_POS(o.pos.xyz).z);
-			float dist = distance(depth, nomd.a);
-			if(nomd.a < depth && dist < 0.25){
-				float3 normal = nomd.xyz*2-1;
-				o.vel.xyz += normal*length(o.vel.xyz);
-				o.col.rgb = normal;
+			float d0 = distance(depth, nomd0.a);
+			float d1 = distance(depth, nomd1.a);
+
+			if(depth < nomd0.a && nomd1.a < depth){
+				float3 normal = d0<d1 ? nomd0.xyz : nomd1.xyz;
+				o.vel.xyz += normal*length(o.vel.xyz)*0.5;
+//				o.col.rgb = normal;
 			}
 			
 			return o;

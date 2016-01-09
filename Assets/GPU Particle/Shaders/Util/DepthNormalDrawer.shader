@@ -1,4 +1,4 @@
-﻿Shader "Unlit/ShowDepth"
+﻿Shader "Unlit/DepthNormalDrawer"
 {
 	Properties
 	{
@@ -10,45 +10,55 @@
 		struct appdata
 		{
 			float4 vertex : POSITION;
+			float3 normal : NORMAL;
 			float2 uv : TEXCOORD0;
 		};
 
 		struct v2f
 		{
-			float2 uv : TEXCOORD0;
+			float3 normal : TEXCOORD0;
+			float depth : TEXCOORD1;
 			float4 vertex : SV_POSITION;
 		};
 
 		sampler2D _MainTex;
-		sampler2D _SSCollTex;
-    	sampler2D _CameraGBufferTexture2;
-    	sampler2D _DepthNormalBack,_DepthNormalFront;
-    	sampler2D_float _CameraDepthTexture;
 		float4 _MainTex_ST;
 		
 		v2f vert (appdata v)
 		{
+			half4 vPos = mul(UNITY_MATRIX_MV, v.vertex);
 			v2f o;
-			o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
-			o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+			o.vertex = mul(UNITY_MATRIX_P, vPos);
+			o.normal = UnityObjectToWorldNormal(v.normal);
+			o.depth = abs(vPos.z);
 			return o;
 		}
 		
 		fixed4 frag (v2f i) : SV_Target
 		{
 			// sample the texture
-			half4 c = tex2D(_DepthNormalBack, i.uv);
-			half4 c1 = tex2D(_DepthNormalFront, i.uv);
-			return lerp(c, c1, frac(_Time.y)>0.5);
+			fixed4 col = half4(i.normal, i.depth);
+			return col;
 		}
 	ENDCG
 	SubShader
 	{
 		Tags { "RenderType"="Opaque" }
-		LOD 100 ZWrite Off
+		LOD 100
 
 		Pass
 		{
+			Cull Front
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment frag
+
+			ENDCG
+		}
+
+		Pass
+		{
+			Cull Back
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
