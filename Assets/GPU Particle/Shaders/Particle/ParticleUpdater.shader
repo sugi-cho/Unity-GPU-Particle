@@ -62,13 +62,23 @@
 			o.uv = (v.vertex.xy / v.vertex.w + 1.0)*0.5;
 			return o;
 		}
-		
+		inline float4 _ComputeScreenPos (float4 pos) {
+			float4 o = pos * 0.5f;
+			#if defined(UNITY_HALF_TEXEL_OFFSET)
+			o.xy = float2(o.x, o.y*_Cam_PParams.x) + o.w * _Cam_SParams.zw;
+			#else
+			o.xy = float2(o.x, o.y*_Cam_PParams.x) + o.w;
+			#endif
+			
+			o.zw = pos.zw;
+			return o;
+		}
 		float2 sUV(float3 wPos)//screen space of main
 		{
 			float4 cPos = mul(_Cam_W2C, float4(wPos,1));
 			cPos.w = 1;
 			float4 sPos = mul(_Cam_C2S, cPos);
-			sPos = ComputeScreenPos(sPos);
+			sPos = _ComputeScreenPos(sPos);
 			return sPos.xy/sPos.w;
 		}
 		float3 fullPos(float2 uv, float d){
