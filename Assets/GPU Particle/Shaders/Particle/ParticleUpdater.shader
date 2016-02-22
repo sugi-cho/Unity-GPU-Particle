@@ -5,7 +5,6 @@
 		_Scale ("curl scale", Float) = 0.1
 		_Speed ("curl speed", Float) = 1
 		_Life ("life time", Float) = 30
-		_EmitRate ("emit rate", Float) = 0.1
 		_Field ("field range", Vector) = (5,0.2,0,0)
 	}
 	CGINCLUDE
@@ -199,9 +198,12 @@
 		}
 		pOut ssCollid(v2f i){
 			pOut o = createPOut(i);
-			float2 uv = saturate(sUV(o.pos.xyz+o.vel.xyz*unity_DeltaTime.x));
-			float4 nomd0 = tex2D(_DepthNormalBack, uv);
-			float4 nomd1 = tex2D(_DepthNormalFront, uv);
+			float2 uv = sUV(o.pos.xyz+o.vel.xyz*unity_DeltaTime.x);
+			if(uv.x<0||1<uv.x||uv.y<0||1<uv.y)
+				o.pos.w -= 1;
+
+			float4 nomd0 = tex2D(_DepthNormalBack, saturate(uv));
+			float4 nomd1 = tex2D(_DepthNormalFront, saturate(uv));
 
 			float depth = abs(CAM_SPACE_POS(o.pos.xyz).z);
 			float d0 = distance(depth, nomd0.a);
@@ -209,7 +211,7 @@
 
 			if(depth < nomd0.a && nomd1.a < depth){
 				float3 normal = d0<d1 ? nomd0.xyz : nomd1.xyz;
-				o.vel.xyz += normal*length(o.vel.xyz)*0.5;
+				o.vel.xyz += normal*length(o.vel.xyz)*0.75;
 //				o.col.rgb = normal;
 			}
 			
