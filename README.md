@@ -10,6 +10,8 @@ n*n個のパーティクルをRenderTextureにより制御しています。
 
 Unity標準のParticleSystemと比較し、より多くのParticleを少ない負荷で処理します。
 
+DX11や、他のモダンな3D APIの使用の場合は、ComputeShaderを使用したこちらの[GPU-Particle](https://github.com/sugi-cho/GPU-Particle)の方法がおススメです！
+
 ## Images
 
 ### CurlNoise
